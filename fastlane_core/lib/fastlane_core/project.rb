@@ -1,5 +1,6 @@
 require_relative 'helper'
 require 'xcodeproj'
+require_relative './configuration/configuration'
 require 'fastlane_core/command_executor'
 
 module FastlaneCore
@@ -67,9 +68,6 @@ module FastlaneCore
     # Is this project a workspace?
     attr_accessor :is_workspace
 
-    # The config object containing the scheme, configuration, etc.
-    attr_accessor :options
-
     # Should the output of xcodebuild commands be silenced?
     attr_accessor :xcodebuild_list_silent
 
@@ -78,7 +76,7 @@ module FastlaneCore
     attr_accessor :xcodebuild_suppress_stderr
 
     def initialize(options, xcodebuild_list_silent: false, xcodebuild_suppress_stderr: false)
-      self.options = options
+      @options = options
       self.path = File.expand_path(options[:workspace] || options[:project])
       self.is_workspace = (options[:workspace].to_s.length > 0)
       self.xcodebuild_list_silent = xcodebuild_list_silent
@@ -87,6 +85,14 @@ module FastlaneCore
       if !path || !File.directory?(path)
         UI.user_error!("Could not find project at path '#{path}'")
       end
+    end
+
+    # The config object containing the scheme, configuration, etc.
+    def options
+      # To keep compatibility with actions that would give a `FastlaneCore::Configuration` object to this `options` argument,
+      # converts `options` to a plain Hash. Otherwise, it might fail when a new option's key is added due to
+      # `FastlaneCore::Configuration` to validate valid keys defined.
+      @options.kind_of?(FastlaneCore::Configuration) ? @options.values : options
     end
 
     def workspace?
